@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
+import path from "path"; // To handle file extensions
 
 const s3Client = new S3Client({
   region: process.env.AWS_S3_REGION,
@@ -33,15 +34,29 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const customName = formData.get("imageName"); // Get custom image name from formData
 
     if (!file) {
       return NextResponse.json({ error: "File is required." }, { status: 400 });
     }
+    // Check if file.type is accessible
+    if (!file.type || file.type === "") {
+      console.warn(
+        "Warning: file.type is missing or undefined. Using fallback."
+      );
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileName = await uploadFileToS3(buffer, file.name);
 
-    return NextResponse.json({ success: true, fileName });
+    // Get original file extension
+    const fileExtension = path.extname(file.name);
+
+    // Use custom name or default to original name, ensuring the extension is included
+    const fileName = customName ? `${customName}${fileExtension}` : file.name;
+
+    const uploadedFileName = await uploadFileToS3(buffer, fileName);
+
+    return NextResponse.json({ success: true, fileName: uploadedFileName });
   } catch (error) {
     return NextResponse.json({ error });
   }

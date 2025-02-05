@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 
 const UploadForm = () => {
   const [file, setFile] = useState(null);
+  const [imageName, setImageName] = useState(""); // Added state for image name
   const [uploading, setUploading] = useState(false);
   const [imageUrls, setImageUrls] = useState([]);
 
-  // Fetch uploaded images
   useEffect(() => {
     fetchUploadedImages();
   }, []);
@@ -22,6 +22,7 @@ const UploadForm = () => {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("imageName", imageName || file.name); // Use the entered name or default to file name
 
     try {
       const response = await fetch("/api/s3-upload", {
@@ -59,11 +60,18 @@ const UploadForm = () => {
       <h1>Upload Files to S3 Bucket</h1>
 
       <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Enter image name (optional)"
+          value={imageName}
+          onChange={(e) => setImageName(e.target.value)}
+        />
         <input type="file" accept="image/*" onChange={handleFileChange} />
         <button type="submit" disabled={!file || uploading}>
           {uploading ? "Uploading..." : "Upload"}
         </button>
       </form>
+
       <h2>Uploaded Images</h2>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
         {imageUrls.map((url, index) => (
